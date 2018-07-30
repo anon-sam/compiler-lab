@@ -1,3 +1,4 @@
+
 	.file	"assgn_1.c"			#C file name
 	.section	.rodata			#read-only data section
 	.align 8					#align with 8-byte boundary
@@ -22,20 +23,20 @@ main:							#label for main function
 	.cfi_offset 6, -16
 	movq	%rsp, %rbp			#set new base pointer to stack base pointer
 	.cfi_def_cfa_register 6
-	subq	$48, %rsp			#set aside 48 bytes on stack
-	movl	$.LC0, %edi			#
+	subq	$48, %rsp			#set space for 48 bytes on stack
+	movl	$.LC0, %edi			#stores string of printf in %edi
+	movl	$0, %eax			#indicates no float parameters passed
+	call	printf				#calls printf,argument is in %edi
+	leaq	-24(%rbp), %rax			#directs address of -24(%rbp) to %rax
+	movq	%rax, %rsi			#stores the above in %rsi
+	movl	$.LC1, %edi			#stores string of scanf in %edi
 	movl	$0, %eax
-	call	printf
-	leaq	-24(%rbp), %rax
-	movq	%rax, %rsi
-	movl	$.LC1, %edi
-	movl	$0, %eax
-	call	__isoc99_scanf
-	movq	-24(%rbp), %rax
-	movq	%rax, %rdi
-	call	monteCarlo
-	movsd	%xmm0, -40(%rbp)
-	movq	-40(%rbp), %rax
+	call	__isoc99_scanf			#calls scanf(%edi,&%rsi),return value is in %eax
+	movq	-24(%rbp), %rax			#put value at %rbp-24 (obtained in scanf)
+	movq	%rax, %rdi			#to %rdi through %rax
+	call	monteCarlo			#calls MonteCarlo 'function'
+	movsd	%xmm0, -40(%rbp)		
+	movq	-40(%rbp), %rax			
 	movq	%rax, -8(%rbp)
 	movq	-24(%rbp), %rax
 	movq	%rax, %rdi
@@ -62,10 +63,10 @@ main:							#label for main function
 	.cfi_endproc
 .LFE2:
 	.size	main, .-main
-	.globl	iSeries
-	.type	iSeries, @function
+	.globl	iSeries				#iSeries is a
+	.type	iSeries, @function		#global function
 iSeries:
-.LFB3:
+.LFB3:						#start of iSeries
 	.cfi_startproc
 	pushq	%rbp
 	.cfi_def_cfa_offset 16
@@ -129,44 +130,44 @@ monteCarlo:
 	pushq	%rbp
 	.cfi_def_cfa_offset 16
 	.cfi_offset 6, -16
-	movq	%rsp, %rbp
+	movq	%rsp, %rbp		#saves stack pointer
 	.cfi_def_cfa_register 6
-	subq	$48, %rsp
-	movq	%rdi, -40(%rbp)
-	movl	$0, -8(%rbp)
-	movl	$12345, %edi
-	call	srand
-	movl	$1, -4(%rbp)
-	jmp	.L10
+	subq	$48, %rsp		#allocates space on stack
+	movq	%rdi, -40(%rbp)		#saves argument (input) on stack
+	movl	$0, -8(%rbp)		#rbp-8=0  (count)
+	movl	$12345, %edi		#sets seed for srand=12345
+	call	srand			#srand()
+	movl	$1, -4(%rbp)		#rbp-4=1   (i)
+	jmp	.L10			#jumps to L10
 .L13:
-	call	rand
-	cvtsi2sd	%eax, %xmm0
-	movsd	.LC6(%rip), %xmm1
-	divsd	%xmm1, %xmm0
-	movsd	%xmm0, -16(%rbp)
-	call	rand
-	cvtsi2sd	%eax, %xmm0
-	movsd	.LC6(%rip), %xmm1
-	divsd	%xmm1, %xmm0
-	movsd	%xmm0, -24(%rbp)
-	movsd	-16(%rbp), %xmm0
-	movapd	%xmm0, %xmm1
-	mulsd	-16(%rbp), %xmm1
+	call	rand			#rand()
+	cvtsi2sd	%eax, %xmm0	#%xmm0=(double)rand()
+	movsd	.LC6(%rip), %xmm1	#stores max in %xmm1
+	divsd	%xmm1, %xmm0		#divide %xmm0 by %xmm1
+	movsd	%xmm0, -16(%rbp)	#rbp-16=(double)rand()/rand_max
+	call	rand			#repeats
+	cvtsi2sd	%eax, %xmm0	#143
+	movsd	.LC6(%rip), %xmm1	#through
+	divsd	%xmm1, %xmm0		#147
+	movsd	%xmm0, -24(%rbp)	#rbp-16 is x and rbp-24 is y
+	movsd	-16(%rbp), %xmm0	#%xmm0=x
+	movapd	%xmm0, %xmm1		#%xmm1=x
+	mulsd	-16(%rbp), %xmm1	#%xmm1=x*x
 	movsd	-24(%rbp), %xmm0
-	mulsd	-24(%rbp), %xmm0
-	addsd	%xmm1, %xmm0
-	movsd	.LC7(%rip), %xmm1
-	ucomisd	%xmm0, %xmm1
-	jb	.L11
-	addl	$1, -8(%rbp)
+	mulsd	-24(%rbp), %xmm0	#%xmm0=y*y
+	addsd	%xmm1, %xmm0		#%xmm0=x*x+y*y
+	movsd	.LC7(%rip), %xmm1	#%xmm1=1 hex to float of .LC7 is 1
+	ucomisd	%xmm0, %xmm1		#jumps to .L11
+	jb	.L11			#if %xmm0 is less than %xmm1
+	addl	$1, -8(%rbp)		#(rbp-8)++
 .L11:
-	addl	$1, -4(%rbp)
+	addl	$1, -4(%rbp)		#i++
 .L10:
-	movl	-4(%rbp), %eax
-	cltq
-	cmpq	-40(%rbp), %rax
-	jle	.L13
-	cvtsi2sd	-8(%rbp), %xmm0
+	movl	-4(%rbp), %eax			#%eax=i in for loop
+	cltq					#promotes to 64bit
+	cmpq	-40(%rbp), %rax			#jumps to .L13
+	jle	.L13				#if %rax is le rbp-40(input)(i.e. if i<=n)
+	cvtsi2sd	-8(%rbp), %xmm0		
 	cvtsi2sdq	-40(%rbp), %xmm1
 	divsd	%xmm1, %xmm0
 	movsd	.LC5(%rip), %xmm1
